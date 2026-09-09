@@ -1,16 +1,15 @@
 """
-StudyNova - AI Study Assistant
-Main Streamlit Application
+STUDY MATE
+AI Study Assistant
 
 Features:
-1. Study Materials
-2. Ask AI
-3. Quiz
-4. My Progress
-5. Study Plan
+1. Study Materials - PDF upload and FAISS indexing
+2. Ask AI - RAG Q&A and AI Agent
+3. Quiz - AI generated MCQ tests
+4. My Progress - Learning analytics and memory
+5. Study Plan - Personalized exam preparation
 """
 
-import time
 from datetime import date, timedelta
 
 import streamlit as st
@@ -24,279 +23,14 @@ import tools
 
 
 # ============================================================
-# PAGE CONFIGURATION
+# PAGE CONFIG
 # ============================================================
 
 st.set_page_config(
-    page_title="StudyNova | AI Study Assistant",
-    page_icon="🚀",
+    page_title="STUDY MATE",
+    page_icon="📘",
     layout="wide",
     initial_sidebar_state="expanded",
-)
-
-
-# ============================================================
-# CUSTOM DESIGN
-# ============================================================
-
-st.markdown(
-    """
-    <style>
-
-    /* ---------- GLOBAL ---------- */
-
-    #MainMenu {
-        visibility: hidden;
-    }
-
-    footer {
-        visibility: hidden;
-    }
-
-    header {
-        visibility: hidden;
-    }
-
-    .stApp {
-        background: #f5f7fb;
-    }
-
-    .block-container {
-        max-width: 1250px;
-        padding-top: 2rem;
-        padding-bottom: 4rem;
-    }
-
-
-    /* ---------- SIDEBAR ---------- */
-
-    section[data-testid="stSidebar"] {
-        background: #111827;
-        border-right: 1px solid #1f2937;
-    }
-
-    section[data-testid="stSidebar"] * {
-        color: #f9fafb;
-    }
-
-    section[data-testid="stSidebar"] .stRadio label {
-        background: transparent;
-        border-radius: 10px;
-        padding: 10px 12px;
-        margin-bottom: 4px;
-        transition: 0.2s;
-    }
-
-    section[data-testid="stSidebar"] .stRadio label:hover {
-        background: #1f2937;
-    }
-
-    section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] {
-        gap: 4px;
-    }
-
-
-    /* ---------- BUTTONS ---------- */
-
-    .stButton > button {
-        border-radius: 9px;
-        border: 1px solid #dbe2ea;
-        font-weight: 600;
-        min-height: 42px;
-        transition: 0.2s;
-    }
-
-    .stButton > button:hover {
-        border-color: #6366f1;
-        color: #4f46e5;
-    }
-
-    .stDownloadButton > button {
-        border-radius: 9px;
-        font-weight: 600;
-    }
-
-
-    /* ---------- INPUTS ---------- */
-
-    .stTextInput input,
-    .stTextArea textarea,
-    .stSelectbox div[data-baseweb="select"],
-    .stNumberInput input {
-        border-radius: 9px;
-    }
-
-
-    /* ---------- CARDS ---------- */
-
-    .card {
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 16px;
-        padding: 24px;
-        margin-bottom: 18px;
-        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
-    }
-
-    .small-card {
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 14px;
-        padding: 18px;
-        height: 100%;
-        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
-    }
-
-
-    /* ---------- BRAND ---------- */
-
-    .brand {
-        font-size: 28px;
-        font-weight: 800;
-        letter-spacing: -1px;
-        margin-bottom: 2px;
-    }
-
-    .brand-sub {
-        color: #9ca3af;
-        font-size: 12px;
-        letter-spacing: 2px;
-        font-weight: 600;
-    }
-
-
-    /* ---------- PAGE HEADER ---------- */
-
-    .page-title {
-        font-size: 34px;
-        font-weight: 800;
-        color: #111827;
-        letter-spacing: -1px;
-        margin-bottom: 4px;
-    }
-
-    .page-description {
-        color: #6b7280;
-        font-size: 15px;
-        margin-bottom: 25px;
-    }
-
-
-    /* ---------- HERO ---------- */
-
-    .hero {
-        background: linear-gradient(
-            135deg,
-            #111827 0%,
-            #312e81 55%,
-            #4f46e5 100%
-        );
-        color: white;
-        border-radius: 20px;
-        padding: 32px;
-        margin-bottom: 24px;
-        box-shadow: 0 10px 30px rgba(79, 70, 229, 0.18);
-    }
-
-    .hero-title {
-        font-size: 27px;
-        font-weight: 800;
-        margin-bottom: 8px;
-    }
-
-    .hero-text {
-        color: #e5e7eb;
-        font-size: 15px;
-        line-height: 1.6;
-    }
-
-
-    /* ---------- SECTION TITLE ---------- */
-
-    .section-title {
-        font-size: 20px;
-        font-weight: 750;
-        color: #111827;
-        margin-top: 10px;
-        margin-bottom: 12px;
-    }
-
-
-    /* ---------- METRICS ---------- */
-
-    div[data-testid="metric-container"] {
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 14px;
-        padding: 15px;
-        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
-    }
-
-
-    /* ---------- CHAT ---------- */
-
-    div[data-testid="stChatMessage"] {
-        border-radius: 14px;
-        margin-bottom: 10px;
-    }
-
-
-    /* ---------- EXPANDERS ---------- */
-
-    div[data-testid="stExpander"] {
-        border: 1px solid #e5e7eb;
-        border-radius: 12px;
-        background: white;
-    }
-
-
-    /* ---------- STATUS ---------- */
-
-    .status-good {
-        color: #047857;
-        font-weight: 700;
-    }
-
-    .status-empty {
-        color: #6b7280;
-        font-weight: 600;
-    }
-
-
-    /* ---------- QUIZ ---------- */
-
-    .quiz-header {
-        background: #ffffff;
-        border: 1px solid #e5e7eb;
-        border-radius: 16px;
-        padding: 22px;
-        margin-bottom: 20px;
-    }
-
-    .quiz-name {
-        font-size: 23px;
-        font-weight: 800;
-        color: #111827;
-    }
-
-    .quiz-info {
-        color: #6b7280;
-        margin-top: 5px;
-    }
-
-
-    /* ---------- FOOTER ---------- */
-
-    .app-footer {
-        text-align: center;
-        color: #9ca3af;
-        font-size: 13px;
-        padding-top: 30px;
-    }
-
-    </style>
-    """,
-    unsafe_allow_html=True,
 )
 
 
@@ -329,20 +63,15 @@ if "generated_plan" not in st.session_state:
 
 with st.sidebar:
 
-    st.markdown(
-        """
-        <div class="brand">StudyNova</div>
-        <div class="brand-sub">AI STUDY ASSISTANT</div>
-        """,
-        unsafe_allow_html=True,
-    )
+    st.title("📘 STUDY MATE")
+    st.caption("AI STUDY ASSISTANT")
 
-    st.markdown("---")
+    st.divider()
 
-    st.caption("YOUR WORKSPACE")
+    st.subheader("Workspace")
 
     nav_choice = st.radio(
-        "Navigation",
+        "Choose a section",
         [
             "📚 Study Materials",
             "💬 Ask AI",
@@ -350,44 +79,99 @@ with st.sidebar:
             "📊 My Progress",
             "📅 Study Plan",
         ],
-        label_visibility="collapsed",
+        index=0,
     )
 
-    st.markdown("---")
+    st.divider()
 
-    try:
-        sidebar_status = rag.get_vector_store_status()
+    st.subheader("Knowledge Base")
 
-        if sidebar_status["is_ready"]:
-            st.success(
-                f"Knowledge base ready\n\n"
-                f"{sidebar_status['total_chunks']} chunks"
-            )
-        else:
-            st.info("Knowledge base is empty")
+    sidebar_status = rag.get_vector_store_status()
 
-    except Exception:
-        st.warning("Knowledge base unavailable")
+    if sidebar_status["is_ready"]:
 
-    st.markdown("---")
+        st.success("Knowledge base active")
 
-    st.caption("StudyNova")
-    st.caption("Learn smarter. Study better.")
+        st.metric(
+            "Searchable Chunks",
+            sidebar_status["total_chunks"],
+        )
+
+        st.caption(
+            f"{len(sidebar_status['indexed_files'])} document(s) indexed"
+        )
+
+    else:
+
+        st.info("No study materials indexed yet.")
+
+    st.divider()
+
+    st.caption("STUDY MATE")
+    st.caption("Learn • Practice • Improve")
 
 
 # ============================================================
-# MAIN APPLICATION HEADER
+# MAIN HEADER
 # ============================================================
 
-st.markdown(
-    """
-    <div class="page-title">StudyNova</div>
-    <div class="page-description">
-        Your personal AI-powered workspace for learning, practice and exam preparation.
-    </div>
-    """,
-    unsafe_allow_html=True,
+st.title("📘 STUDY MATE")
+
+st.caption(
+    "Your personal AI-powered learning workspace"
 )
+
+st.divider()
+
+
+# ============================================================
+# HOME / SECTION INTRO
+# ============================================================
+
+if nav_choice == "📚 Study Materials":
+
+    st.header("📚 Study Materials")
+
+    st.write(
+        "Build your personal AI knowledge base by uploading "
+        "lecture notes, textbooks, course slides and other PDF materials."
+    )
+
+elif nav_choice == "💬 Ask AI":
+
+    st.header("💬 Ask AI")
+
+    st.write(
+        "Ask questions about your uploaded study materials "
+        "and get answers using Retrieval-Augmented Generation."
+    )
+
+elif nav_choice == "📝 Quiz":
+
+    st.header("📝 Quiz Center")
+
+    st.write(
+        "Generate interactive multiple-choice quizzes "
+        "and test your understanding."
+    )
+
+elif nav_choice == "📊 My Progress":
+
+    st.header("📊 My Progress")
+
+    st.write(
+        "Track your learning activity, quiz performance, "
+        "weak areas and recent questions."
+    )
+
+elif nav_choice == "📅 Study Plan":
+
+    st.header("📅 Study Plan")
+
+    st.write(
+        "Create a personalized study schedule based on "
+        "your exam date, available time and weak topics."
+    )
 
 
 # ============================================================
@@ -396,58 +180,65 @@ st.markdown(
 
 if nav_choice == "📚 Study Materials":
 
-    st.markdown(
-        """
-        <div class="hero">
-            <div class="hero-title">Build your learning library</div>
-            <div class="hero-text">
-                Upload your lecture notes, textbooks and course materials.
-                StudyNova processes your PDFs and creates a searchable knowledge base
-                for AI-powered question answering.
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
+    st.divider()
+
+    left_col, right_col = st.columns(
+        [1.6, 1],
+        gap="large",
     )
 
-    left, right = st.columns([1.6, 1])
+    # --------------------------------------------------------
+    # UPLOAD
+    # --------------------------------------------------------
 
-    with left:
+    with left_col:
 
-        st.markdown(
-            '<div class="section-title">Add study materials</div>',
-            unsafe_allow_html=True,
+        st.subheader("📄 Upload Materials")
+
+        st.info(
+            "Upload one or more PDF files. "
+            "STUDY MATE will extract the text, create chunks "
+            "and add them to the FAISS knowledge base."
         )
 
         uploaded_files = st.file_uploader(
-            "Upload PDF files",
+            "Choose PDF files",
             type=["pdf"],
             accept_multiple_files=True,
-            help="You can upload lecture notes, textbooks, question banks and study materials.",
+            help="Upload lecture notes, textbooks or course slides.",
         )
 
         if uploaded_files:
 
-            st.info(
-                f"{len(uploaded_files)} PDF file(s) selected."
+            st.success(
+                f"{len(uploaded_files)} file(s) selected."
             )
 
-            process_btn = st.button(
-                "Process & Add to Library",
+            for uploaded_file in uploaded_files:
+
+                st.write(
+                    f"📄 **{uploaded_file.name}**"
+                )
+
+            process_button = st.button(
+                "🚀 Process & Index Materials",
                 type="primary",
                 use_container_width=True,
             )
 
-            if process_btn:
+            if process_button:
 
                 for uploaded_file in uploaded_files:
 
                     file_path = (
-                        config.UPLOADS_DIR / uploaded_file.name
+                        config.UPLOADS_DIR
+                        / uploaded_file.name
                     )
 
                     with open(file_path, "wb") as f:
-                        f.write(uploaded_file.getbuffer())
+                        f.write(
+                            uploaded_file.getbuffer()
+                        )
 
                     with st.spinner(
                         f"Processing {uploaded_file.name}..."
@@ -455,91 +246,96 @@ if nav_choice == "📚 Study Materials":
 
                         try:
 
-                            result = rag.process_and_index_pdf(
-                                file_path,
-                                uploaded_file.name,
+                            result = (
+                                rag.process_and_index_pdf(
+                                    file_path,
+                                    uploaded_file.name,
+                                )
                             )
 
                             st.success(
-                                f"Added {result['file_name']} to your library."
+                                f"Successfully processed: "
+                                f"{result['file_name']}"
                             )
 
-                            a, b, c = st.columns(3)
+                            r1, r2, r3 = st.columns(3)
 
-                            with a:
+                            with r1:
                                 st.metric(
                                     "Pages",
                                     result["total_pages"],
                                 )
 
-                            with b:
+                            with r2:
                                 st.metric(
-                                    "Chunks",
+                                    "New Chunks",
                                     result["total_chunks"],
                                 )
 
-                            with c:
+                            with r3:
                                 st.metric(
-                                    "Total chunks",
+                                    "Total Chunks",
                                     result["total_index_size"],
                                 )
 
-                        except ValueError as ex:
-                            st.error(str(ex))
+                        except ValueError as error:
 
-                        except Exception as ex:
                             st.error(
-                                f"Could not process {uploaded_file.name}: {ex}"
+                                f"⚠️ {error}"
                             )
 
-    with right:
+                        except Exception as error:
 
-        st.markdown(
-            '<div class="section-title">Library status</div>',
-            unsafe_allow_html=True,
-        )
+                            st.error(
+                                f"❌ Error processing "
+                                f"{uploaded_file.name}: {error}"
+                            )
+
+    # --------------------------------------------------------
+    # KNOWLEDGE BASE
+    # --------------------------------------------------------
+
+    with right_col:
+
+        st.subheader("🗂 Knowledge Base")
 
         status = rag.get_vector_store_status()
 
         if status["is_ready"]:
 
-            st.markdown(
-                f"""
-                <div class="small-card">
-                    <strong>Knowledge base active</strong><br><br>
-                    {status["total_chunks"]} searchable content chunks
-                </div>
-                """,
-                unsafe_allow_html=True,
+            st.success(
+                f"Index active — "
+                f"{status['total_chunks']} searchable chunks"
             )
 
-            st.markdown("")
+            st.write("**Indexed documents:**")
 
-            st.markdown("**Indexed files**")
+            for file_name in status["indexed_files"]:
 
-            for filename in status["indexed_files"]:
-                st.write(f"📄 {filename}")
+                st.write(
+                    f"📄 {file_name}"
+                )
+
+            st.divider()
 
             if st.button(
-                "Clear Knowledge Base",
+                "🗑️ Clear Vector Index",
                 use_container_width=True,
             ):
+
                 rag.clear_vector_store()
-                st.success("Knowledge base cleared.")
-                time.sleep(0.5)
+
+                st.success(
+                    "Vector index cleared."
+                )
+
                 st.rerun()
 
         else:
 
-            st.markdown(
-                """
-                <div class="small-card">
-                    <strong>No materials yet</strong><br><br>
-                    Upload at least one PDF to activate StudyNova's
-                    AI question answering.
-                </div>
-                """,
-                unsafe_allow_html=True,
+            st.info(
+                "Your knowledge base is empty.\n\n"
+                "Upload a PDF to enable RAG question answering."
             )
 
 
@@ -549,115 +345,144 @@ if nav_choice == "📚 Study Materials":
 
 elif nav_choice == "💬 Ask AI":
 
-    st.markdown(
-        """
-        <div class="hero">
-            <div class="hero-title">Ask StudyNova</div>
-            <div class="hero-text">
-                Ask questions about your uploaded materials and get answers
-                grounded in your study content.
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
+    st.divider()
+
+    mode_col, clear_col = st.columns(
+        [3, 1],
+        gap="large",
     )
 
-    top_left, top_right = st.columns([2, 1])
-
-    with top_left:
+    with mode_col:
 
         interaction_mode = st.radio(
-            "Answering mode",
+            "Interaction Mode",
             [
                 "Direct Study Q&A (RAG)",
                 "AI Agent (Intent Router)",
             ],
             horizontal=True,
             help=(
-                "Direct mode answers from your study materials. "
-                "Agent mode can route requests to quizzes, study plans and progress."
+                "Direct RAG answers from your materials. "
+                "AI Agent mode can route requests to different tools."
             ),
         )
 
-    with top_right:
+    with clear_col:
+
+        st.write("")
 
         if st.button(
-            "Clear conversation",
+            "🧹 Clear Chat",
             use_container_width=True,
         ):
+
             st.session_state.chat_history = []
+
             st.rerun()
 
-    st.markdown(
-        '<div class="section-title">Quick actions</div>',
-        unsafe_allow_html=True,
-    )
+    st.divider()
+
+    # --------------------------------------------------------
+    # QUICK ACTIONS
+    # --------------------------------------------------------
+
+    st.subheader("⚡ Quick Actions")
 
     q1, q2, q3 = st.columns(3)
 
     quick_question = None
 
     with q1:
+
         if st.button(
-            "Summarize my material",
+            "📌 Summarize",
             use_container_width=True,
         ):
+
             quick_question = (
-                "What are the main concepts discussed in my study material?"
+                "What is the main concept discussed "
+                "in this material?"
             )
 
     with q2:
-        if st.button(
-            "Explain important concepts",
-            use_container_width=True,
-        ):
-            quick_question = (
-                "Explain the most important concepts from my study material."
-            )
 
-    with q3:
         if st.button(
-            "Create a quiz",
+            "📝 Create Quiz",
             use_container_width=True,
         ):
+
             quick_question = "Give me a quiz"
 
-    st.markdown("---")
+    with q3:
 
-    for msg in st.session_state.chat_history:
+        if st.button(
+            "📅 Create Study Plan",
+            use_container_width=True,
+        ):
 
-        with st.chat_message(msg["role"]):
+            quick_question = "Create a study plan"
 
-            if msg.get("tool"):
+    # --------------------------------------------------------
+    # CHAT HISTORY
+    # --------------------------------------------------------
+
+    for message in st.session_state.chat_history:
+
+        with st.chat_message(
+            message["role"]
+        ):
+
+            if message.get("tool"):
+
                 st.caption(
-                    f"Agent action: {msg['tool']}"
+                    f"⚙️ Tool used: "
+                    f"{message['tool']}"
                 )
 
-            st.markdown(msg["content"])
+            st.markdown(
+                message["content"]
+            )
 
-            if msg.get("sources"):
+            sources = message.get(
+                "sources",
+                [],
+            )
+
+            if sources:
 
                 with st.expander(
-                    "View sources",
-                    expanded=False,
+                    "🔍 View Sources & Citations"
                 ):
 
-                    for src in msg["sources"]:
+                    for source in sources:
 
-                        st.markdown(
-                            f"**{src['file_name']}**  \n"
-                            f"Page: {src['page']}  \n"
-                            f"Relevance: {src['score']}"
+                        st.write(
+                            f"**File:** "
+                            f"{source['file_name']}"
+                        )
+
+                        st.write(
+                            f"**Page:** "
+                            f"{source['page']}"
+                        )
+
+                        st.write(
+                            f"**Score:** "
+                            f"{source['score']}"
                         )
 
                         st.caption(
-                            src["snippet"]
+                            f"“{source['snippet']}”"
                         )
 
                         st.divider()
 
+    # --------------------------------------------------------
+    # USER INPUT
+    # --------------------------------------------------------
+
     user_input = st.chat_input(
-        "Ask anything about your study materials..."
+        "Ask something about your study materials..."
     )
 
     prompt_to_run = (
@@ -671,8 +496,8 @@ elif nav_choice == "💬 Ask AI":
         if not config.is_gemini_configured():
 
             st.error(
-                "Gemini AI is not configured. "
-                "Please check your GEMINI_API_KEY in the .env file."
+                "⚠️ Gemini AI is not configured. "
+                "Please check your GEMINI_API_KEY."
             )
 
             st.stop()
@@ -685,68 +510,41 @@ elif nav_choice == "💬 Ask AI":
         )
 
         with st.chat_message("user"):
-            st.markdown(prompt_to_run)
+
+            st.markdown(
+                prompt_to_run
+            )
 
         with st.chat_message("assistant"):
 
-            with st.spinner("StudyNova is thinking..."):
+            with st.spinner(
+                "STUDY MATE is thinking..."
+            ):
 
                 try:
 
-                    if interaction_mode == "AI Agent (Intent Router)":
+                    # ------------------------------------------------
+                    # AI AGENT
+                    # ------------------------------------------------
 
-                        response = tools.route_and_execute(
-                            prompt_to_run
+                    if (
+                        interaction_mode
+                        == "AI Agent (Intent Router)"
+                    ):
+
+                        result = (
+                            tools.route_and_execute(
+                                prompt_to_run
+                            )
                         )
 
                         st.caption(
-                            f"Agent action: {response['tool_selected']}"
+                            f"⚙️ Tool used: "
+                            f"{result['tool_selected']}"
                         )
 
                         st.markdown(
-                            response["response"]
-                        )
-
-                        sources = response.get(
-                            "sources",
-                            [],
-                        )
-
-                        if sources:
-
-                            with st.expander(
-                                "View sources",
-                                expanded=False,
-                            ):
-
-                                for src in sources:
-
-                                    st.markdown(
-                                        f"**{src['file_name']}** — "
-                                        f"Page {src['page']}"
-                                    )
-
-                                    st.caption(
-                                        src["snippet"]
-                                    )
-
-                        st.session_state.chat_history.append(
-                            {
-                                "role": "assistant",
-                                "content": response["response"],
-                                "tool": response["tool_selected"],
-                                "sources": sources,
-                            }
-                        )
-
-                    else:
-
-                        result = rag.answer_question(
-                            prompt_to_run
-                        )
-
-                        st.markdown(
-                            result["answer"]
+                            result["response"]
                         )
 
                         sources = result.get(
@@ -757,33 +555,108 @@ elif nav_choice == "💬 Ask AI":
                         if sources:
 
                             with st.expander(
-                                "View sources",
-                                expanded=False,
+                                "🔍 View Sources & Citations"
                             ):
 
-                                for src in sources:
+                                for source in sources:
 
-                                    st.markdown(
-                                        f"**{src['file_name']}** — "
-                                        f"Page {src['page']}"
+                                    st.write(
+                                        f"**File:** "
+                                        f"{source['file_name']}"
+                                    )
+
+                                    st.write(
+                                        f"**Page:** "
+                                        f"{source['page']}"
+                                    )
+
+                                    st.write(
+                                        f"**Score:** "
+                                        f"{source['score']}"
                                     )
 
                                     st.caption(
-                                        src["snippet"]
+                                        f"“{source['snippet']}”"
                                     )
 
                         st.session_state.chat_history.append(
                             {
                                 "role": "assistant",
-                                "content": result["answer"],
+                                "content": result[
+                                    "response"
+                                ],
+                                "tool": result[
+                                    "tool_selected"
+                                ],
                                 "sources": sources,
                             }
                         )
 
-                except Exception as ex:
+                    # ------------------------------------------------
+                    # DIRECT RAG
+                    # ------------------------------------------------
+
+                    else:
+
+                        rag_result = (
+                            rag.answer_question(
+                                prompt_to_run
+                            )
+                        )
+
+                        st.markdown(
+                            rag_result["answer"]
+                        )
+
+                        sources = rag_result.get(
+                            "sources",
+                            [],
+                        )
+
+                        if sources:
+
+                            with st.expander(
+                                "🔍 View Sources & Citations",
+                                expanded=True,
+                            ):
+
+                                for source in sources:
+
+                                    st.write(
+                                        f"**File:** "
+                                        f"{source['file_name']}"
+                                    )
+
+                                    st.write(
+                                        f"**Page:** "
+                                        f"{source['page']}"
+                                    )
+
+                                    st.write(
+                                        f"**Similarity:** "
+                                        f"{source['score']}"
+                                    )
+
+                                    st.caption(
+                                        f"“{source['snippet']}”"
+                                    )
+
+                                    st.divider()
+
+                        st.session_state.chat_history.append(
+                            {
+                                "role": "assistant",
+                                "content": rag_result[
+                                    "answer"
+                                ],
+                                "sources": sources,
+                            }
+                        )
+
+                except Exception as error:
 
                     st.error(
-                        f"Something went wrong: {ex}"
+                        f"❌ Error: {error}"
                     )
 
 
@@ -793,73 +666,70 @@ elif nav_choice == "💬 Ask AI":
 
 elif nav_choice == "📝 Quiz":
 
-    st.markdown(
-        """
-        <div class="hero">
-            <div class="hero-title">Practice with AI-generated quizzes</div>
-            <div class="hero-text">
-                Test your understanding with questions generated from
-                your selected topic and uploaded study material.
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    st.divider()
 
-    mem_data = memory.load_memory()
+    memory_data = memory.load_memory()
 
     default_topic = (
-        mem_data["topics_studied"][-1]
-        if mem_data["topics_studied"]
+        memory_data["topics_studied"][-1]
+        if memory_data["topics_studied"]
         else "Cloud Computing"
     )
 
-    st.markdown(
-        '<div class="section-title">Quiz configuration</div>',
-        unsafe_allow_html=True,
+    st.subheader("⚙️ Quiz Setup")
+
+    setup1, setup2, setup3 = st.columns(
+        [2, 1, 1],
+        gap="medium",
     )
 
-    c1, c2, c3 = st.columns([2, 1, 1])
-
-    with c1:
+    with setup1:
 
         quiz_topic = st.text_input(
-            "Topic",
+            "Quiz Topic",
             value=default_topic,
-            placeholder="Example: Cloud Computing",
+            help="Enter the topic you want to practice.",
         )
 
-    with c2:
+    with setup2:
 
-        num_q = st.selectbox(
+        number_of_questions = st.selectbox(
             "Questions",
             [5, 10],
+            index=0,
         )
 
-    with c3:
+    with setup3:
 
         difficulty = st.selectbox(
             "Difficulty",
-            ["Easy", "Medium", "Hard"],
+            [
+                "Easy",
+                "Medium",
+                "Hard",
+            ],
             index=1,
         )
 
-    if st.button(
-        "Generate Quiz",
+    generate_quiz = st.button(
+        "⚡ Generate Quiz",
         type="primary",
         use_container_width=True,
-    ):
+    )
+
+    if generate_quiz:
 
         if not config.is_gemini_configured():
 
             st.error(
-                "Gemini AI is not configured."
+                "⚠️ Gemini AI is not configured."
             )
 
         else:
 
             with st.spinner(
-                f"Creating your {difficulty.lower()} quiz..."
+                f"Generating "
+                f"{number_of_questions} questions..."
             ):
 
                 try:
@@ -871,36 +741,50 @@ elif nav_choice == "📝 Quiz":
                         )
                     )
 
-                    context = "\n\n".join(
-                        [
-                            chunk["text"]
-                            for chunk in context_chunks
-                        ]
+                    context_string = (
+                        "\n\n".join(
+                            [
+                                chunk["text"]
+                                for chunk in context_chunks
+                            ]
+                        )
+                        if context_chunks
+                        else ""
                     )
 
-                    questions = quiz.generate_quiz_questions(
-                        topic=quiz_topic,
-                        num_questions=num_q,
-                        difficulty=difficulty,
-                        context=context,
+                    questions = (
+                        quiz.generate_quiz_questions(
+                            topic=quiz_topic,
+                            num_questions=number_of_questions,
+                            difficulty=difficulty,
+                            context=context_string,
+                        )
                     )
 
-                    st.session_state.current_quiz = questions
+                    st.session_state.current_quiz = (
+                        questions
+                    )
+
                     st.session_state.quiz_answers = {}
+
                     st.session_state.quiz_results = None
-                    st.session_state.quiz_topic = quiz_topic
+
+                    st.session_state.quiz_topic = (
+                        quiz_topic
+                    )
 
                     st.success(
-                        f"{len(questions)} questions generated."
+                        f"Generated {len(questions)} "
+                        f"questions."
                     )
 
-                    time.sleep(0.5)
                     st.rerun()
 
-                except Exception as ex:
+                except Exception as error:
 
                     st.error(
-                        f"Quiz generation failed: {ex}"
+                        f"❌ Failed to generate quiz: "
+                        f"{error}"
                     )
 
     # --------------------------------------------------------
@@ -909,24 +793,22 @@ elif nav_choice == "📝 Quiz":
 
     if st.session_state.current_quiz:
 
-        st.markdown(
-            f"""
-            <div class="quiz-header">
-                <div class="quiz-name">
-                    {st.session_state.quiz_topic}
-                </div>
-                <div class="quiz-info">
-                    {len(st.session_state.current_quiz)}
-                    questions · Choose the best answer
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
+        st.divider()
+
+        st.subheader(
+            f"✍️ {st.session_state.quiz_topic}"
         )
 
-        with st.form("study_nova_quiz"):
+        st.caption(
+            f"{len(st.session_state.current_quiz)} "
+            f"questions"
+        )
 
-            for question in st.session_state.current_quiz:
+        with st.form("quiz_form"):
+
+            for question in (
+                st.session_state.current_quiz
+            ):
 
                 st.markdown(
                     f"### Question {question['id']}"
@@ -942,59 +824,62 @@ elif nav_choice == "📝 Quiz":
                     in question["options"].items()
                 ]
 
-                previous = (
+                previous_choice = (
                     st.session_state.quiz_answers.get(
                         question["id"]
                     )
                 )
 
                 selected = st.radio(
-                    "Choose your answer",
+                    f"Answer for question "
+                    f"{question['id']}",
                     options,
-                    key=f"question_{question['id']}",
-                    index=(
-                        [
-                            item[0]
-                            for item in options
-                        ].index(previous)
-                        if previous
-                        and previous in [
-                            item[0]
-                            for item in options
-                        ]
-                        else None
+                    index=None,
+                    key=(
+                        f"question_"
+                        f"{question['id']}"
                     ),
-                    label_visibility="collapsed",
                 )
 
                 if selected:
+
                     st.session_state.quiz_answers[
                         question["id"]
                     ] = selected[0]
 
                 st.divider()
 
-            submit = st.form_submit_button(
-                "Submit Quiz",
+            submit_quiz = st.form_submit_button(
+                "📊 Submit Quiz",
                 type="primary",
                 use_container_width=True,
             )
 
-        if submit:
+        if submit_quiz:
 
             with st.spinner(
-                "Checking your answers..."
+                "Grading your quiz..."
             ):
 
-                result = quiz.calculate_quiz_score(
-                    questions=st.session_state.current_quiz,
-                    user_answers=st.session_state.quiz_answers,
-                    topic=st.session_state.quiz_topic,
+                results = (
+                    quiz.calculate_quiz_score(
+                        questions=(
+                            st.session_state.current_quiz
+                        ),
+                        user_answers=(
+                            st.session_state.quiz_answers
+                        ),
+                        topic=(
+                            st.session_state.quiz_topic
+                        ),
+                    )
                 )
 
-                st.session_state.quiz_results = result
+                st.session_state.quiz_results = (
+                    results
+                )
 
-            st.rerun()
+                st.rerun()
 
     # --------------------------------------------------------
     # RESULTS
@@ -1002,37 +887,44 @@ elif nav_choice == "📝 Quiz":
 
     if st.session_state.quiz_results:
 
-        result = st.session_state.quiz_results
-
-        st.markdown("---")
-
-        st.markdown(
-            '<div class="section-title">Your result</div>',
-            unsafe_allow_html=True,
+        results = (
+            st.session_state.quiz_results
         )
 
-        r1, r2, r3 = st.columns(3)
+        st.divider()
 
-        with r1:
+        st.subheader("🏆 Quiz Results")
+
+        result1, result2, result3 = st.columns(3)
+
+        with result1:
+
             st.metric(
                 "Score",
-                f"{result['score']} / {result['total']}",
+                f"{results['score']} / "
+                f"{results['total']}",
             )
 
-        with r2:
+        with result2:
+
             st.metric(
                 "Percentage",
-                f"{result['percentage']}%",
+                f"{results['percentage']}%",
             )
 
-        with r3:
+        with result3:
 
-            if result["percentage"] >= 80:
-                performance = "Excellent"
-            elif result["percentage"] >= 60:
-                performance = "Good"
+            if results["percentage"] >= 80:
+
+                performance = "🌟 Excellent"
+
+            elif results["percentage"] >= 60:
+
+                performance = "👍 Good Job"
+
             else:
-                performance = "Needs Practice"
+
+                performance = "⚠️ Needs Review"
 
             st.metric(
                 "Performance",
@@ -1040,83 +932,58 @@ elif nav_choice == "📝 Quiz":
             )
 
         st.progress(
-            result["percentage"] / 100
+            results["percentage"] / 100
         )
 
-        if result["percentage"] >= 80:
-            st.success(
-                "Excellent work! You have a strong understanding of this topic."
-            )
-        elif result["percentage"] >= 60:
-            st.info(
-                "Good job! Review the incorrect answers once more."
-            )
-        else:
-            st.warning(
-                "Keep practicing. Focus especially on the weak areas below."
-            )
-
-        st.markdown(
-            '<div class="section-title">Question review</div>',
-            unsafe_allow_html=True,
+        st.subheader(
+            "📋 Detailed Review"
         )
 
-        for item in result["details"]:
+        for item in results["details"]:
 
             if item["is_correct"]:
 
-                with st.expander(
-                    f"Correct — Question {item['id']}"
-                ):
+                st.success(
+                    f"""
+                    **Q{item['id']} — Correct**
 
-                    st.write(
-                        item["question"]
-                    )
+                    **Question:** {item['question']}
 
-                    st.success(
-                        f"Your answer: "
-                        f"{item['selected_option']}. "
-                        f"{item['selected_text']}"
-                    )
+                    **Your Answer:** {item['selected_option']}. {item['selected_text']}
 
-                    st.info(
-                        item["explanation"]
-                    )
+                    **Explanation:** {item['explanation']}
+                    """
+                )
 
             else:
 
-                with st.expander(
-                    f"Review — Question {item['id']}"
-                ):
+                st.error(
+                    f"""
+                    **Q{item['id']} — Incorrect**
 
-                    st.write(
-                        item["question"]
-                    )
+                    **Question:** {item['question']}
 
-                    st.error(
-                        f"Your answer: "
-                        f"{item['selected_option']}. "
-                        f"{item['selected_text']}"
-                    )
+                    **Your Answer:** {item['selected_option']}. {item['selected_text']}
 
-                    st.success(
-                        f"Correct answer: "
-                        f"{item['correct_option']}. "
-                        f"{item['correct_text']}"
-                    )
+                    **Correct Answer:** {item['correct_option']}. {item['correct_text']}
 
-                    st.info(
-                        item["explanation"]
-                    )
+                    **Explanation:** {item['explanation']}
+                    """
+                )
 
-        if result["weak_areas"]:
+        if results["weak_areas"]:
 
             st.warning(
-                "Focus areas: "
+                "⚠️ **Focus Areas:** "
                 + ", ".join(
-                    result["weak_areas"]
+                    results["weak_areas"]
                 )
             )
+
+        st.info(
+            "✅ This result has been recorded "
+            "in My Progress."
+        )
 
 
 # ============================================================
@@ -1125,142 +992,151 @@ elif nav_choice == "📝 Quiz":
 
 elif nav_choice == "📊 My Progress":
 
-    st.markdown(
-        """
-        <div class="hero">
-            <div class="hero-title">Track your learning journey</div>
-            <div class="hero-text">
-                StudyNova remembers your topics, questions, quiz results
-                and weak areas so you know what to study next.
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
+    st.divider()
+
+    summary = (
+        memory.get_progress_summary()
     )
 
-    summary = memory.get_progress_summary()
+    # --------------------------------------------------------
+    # METRICS
+    # --------------------------------------------------------
 
-    p1, p2, p3, p4 = st.columns(4)
+    m1, m2, m3, m4 = st.columns(4)
 
-    with p1:
+    with m1:
+
         st.metric(
-            "Topics Studied",
-            summary["total_topics_studied"],
+            "📚 Topics Studied",
+            summary[
+                "total_topics_studied"
+            ],
         )
 
-    with p2:
+    with m2:
+
         st.metric(
-            "Questions Asked",
-            summary["total_questions_asked"],
+            "💬 Questions Asked",
+            summary[
+                "total_questions_asked"
+            ],
         )
 
-    with p3:
+    with m3:
+
         st.metric(
-            "Quizzes Completed",
-            summary["total_quizzes_taken"],
+            "📝 Quizzes Completed",
+            summary[
+                "total_quizzes_taken"
+            ],
         )
 
-    with p4:
+    with m4:
+
         st.metric(
-            "Average Score",
+            "🎯 Average Score",
             f"{summary['average_quiz_score']}%",
         )
 
-    st.markdown("---")
-
-    left, right = st.columns(2)
+    st.divider()
 
     # --------------------------------------------------------
-    # TOPICS
+    # TOPICS + WEAK AREAS
     # --------------------------------------------------------
 
-    with left:
+    left_progress, right_progress = (
+        st.columns(2, gap="large")
+    )
 
-        st.markdown(
-            '<div class="section-title">Topics studied</div>',
-            unsafe_allow_html=True,
+    with left_progress:
+
+        st.subheader(
+            "📚 Topics Studied"
         )
 
         if summary["topics_studied"]:
 
-            for topic in summary["topics_studied"]:
+            for topic in summary[
+                "topics_studied"
+            ]:
 
-                st.markdown(
+                st.write(
                     f"📘 **{topic}**"
                 )
 
         else:
 
             st.info(
-                "No topics recorded yet. "
-                "Upload study materials to get started."
+                "No topics recorded yet."
             )
 
-        st.markdown(
-            '<div class="section-title">Areas to improve</div>',
-            unsafe_allow_html=True,
+        st.subheader(
+            "⚠️ Focus Topics"
         )
 
         if summary["weak_topics"]:
 
-            for topic in summary["weak_topics"]:
+            for weak_topic in summary[
+                "weak_topics"
+            ]:
 
                 st.warning(
-                    f"Practice: {topic}"
+                    f"🔴 {weak_topic}"
                 )
 
         else:
 
             st.success(
-                "No weak topics identified yet."
+                "🎉 No weak topics flagged."
             )
 
-    # --------------------------------------------------------
-    # HISTORY
-    # --------------------------------------------------------
+    with right_progress:
 
-    with right:
-
-        st.markdown(
-            '<div class="section-title">Quiz history</div>',
-            unsafe_allow_html=True,
+        st.subheader(
+            "📝 Quiz History"
         )
 
         if summary["quiz_history"]:
 
-            for quiz_history in reversed(
-                summary["quiz_history"]
-            ):
+            for history in summary[
+                "quiz_history"
+            ]:
 
-                percentage = quiz_history[
-                    "percentage"
-                ]
+                if history["percentage"] >= 70:
 
-                if percentage >= 70:
                     icon = "🟢"
+
                 else:
+
                     icon = "🔴"
 
                 with st.expander(
                     f"{icon} "
-                    f"{quiz_history['topic']} — "
-                    f"{quiz_history['score']}/"
-                    f"{quiz_history['total']} "
-                    f"({percentage}%)"
+                    f"{history['topic']} — "
+                    f"{history['score']}/"
+                    f"{history['total']} "
+                    f"({history['percentage']}%)"
                 ):
 
                     st.write(
-                        f"Date: {quiz_history['timestamp']}"
+                        f"📅 **Date:** "
+                        f"{history['timestamp']}"
                     )
 
-                    if quiz_history.get(
+                    st.write(
+                        f"🎯 **Score:** "
+                        f"{history['score']} "
+                        f"of {history['total']}"
+                    )
+
+                    if history.get(
                         "weak_areas"
                     ):
 
                         st.write(
-                            "Weak areas: "
+                            "⚠️ **Weak Areas:** "
                             + ", ".join(
-                                quiz_history[
+                                history[
                                     "weak_areas"
                                 ]
                             )
@@ -1269,24 +1145,36 @@ elif nav_choice == "📊 My Progress":
         else:
 
             st.info(
-                "No quizzes completed yet."
+                "No quizzes taken yet."
             )
 
-    st.markdown("---")
+    # --------------------------------------------------------
+    # RECENT QUESTIONS
+    # --------------------------------------------------------
 
-    st.markdown(
-        '<div class="section-title">Recent questions</div>',
-        unsafe_allow_html=True,
+    st.divider()
+
+    st.subheader(
+        "🕒 Recent Questions"
     )
 
     if summary["recent_questions"]:
 
-        for question in summary[
-            "recent_questions"
-        ][:7]:
+        for recent_question in (
+            summary["recent_questions"][:7]
+        ):
 
-            st.markdown(
-                f"💬 {question['question']}"
+            st.write(
+                f"💬 "
+                f"*{recent_question['question']}*"
+            )
+
+            st.caption(
+                "Topic: "
+                + recent_question.get(
+                    "topic",
+                    "General",
+                )
             )
 
     else:
@@ -1295,20 +1183,18 @@ elif nav_choice == "📊 My Progress":
             "No questions asked yet."
         )
 
-    st.markdown("---")
+    st.divider()
 
     if st.button(
-        "Reset learning memory",
-        use_container_width=True,
+        "🗑️ Reset All Student Memory"
     ):
 
         memory.clear_memory()
 
         st.success(
-            "Your learning memory has been reset."
+            "Student memory reset successfully."
         )
 
-        time.sleep(0.5)
         st.rerun()
 
 
@@ -1318,59 +1204,53 @@ elif nav_choice == "📊 My Progress":
 
 elif nav_choice == "📅 Study Plan":
 
-    st.markdown(
-        """
-        <div class="hero">
-            <div class="hero-title">Create your study roadmap</div>
-            <div class="hero-text">
-                Build a personalized day-by-day plan based on your exam date,
-                available study time, knowledge level and weak topics.
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    st.divider()
 
-    mem_data = memory.load_memory()
+    memory_data = memory.load_memory()
 
     default_subject = (
-        mem_data["topics_studied"][-1]
-        if mem_data["topics_studied"]
+        memory_data["topics_studied"][-1]
+        if memory_data["topics_studied"]
         else "Cloud Computing"
     )
 
-    st.markdown(
-        '<div class="section-title">Study details</div>',
-        unsafe_allow_html=True,
+    st.subheader(
+        "🎯 Exam Preparation"
     )
 
-    c1, c2 = st.columns(2)
+    plan_left, plan_right = st.columns(
+        2,
+        gap="large",
+    )
 
-    with c1:
+    with plan_left:
 
         subject = st.text_input(
-            "Subject / Course",
+            "Subject / Course Name",
             value=default_subject,
         )
 
         exam_date = st.date_input(
-            "Exam date",
-            value=date.today() + timedelta(days=7),
+            "Target Exam Date",
+            value=(
+                date.today()
+                + timedelta(days=7)
+            ),
             min_value=date.today(),
         )
 
         daily_hours = st.slider(
-            "Daily study time",
+            "Daily Study Hours",
             min_value=1.0,
             max_value=8.0,
             value=2.5,
             step=0.5,
         )
 
-    with c2:
+    with plan_right:
 
         knowledge_level = st.selectbox(
-            "Current knowledge level",
+            "Current Knowledge Level",
             [
                 "Beginner",
                 "Intermediate",
@@ -1379,57 +1259,59 @@ elif nav_choice == "📅 Study Plan":
             index=1,
         )
 
-        weak_topics = mem_data.get(
+        weak_topics = memory_data.get(
             "weak_topics",
             [],
         )
 
-        options = list(
-            dict.fromkeys(
+        selected_weak_topics = st.multiselect(
+            "Priority Weak Topics",
+            options=(
                 weak_topics
                 + [
                     "Exam Review",
                     "Core Theory",
                 ]
+            ),
+            default=(
+                weak_topics
+                if weak_topics
+                else []
+            ),
+        )
+
+        custom_focus = st.text_input(
+            "Additional Focus Topics",
+            placeholder=(
+                "Example: Virtualization, "
+                "Service Models"
+            ),
+        )
+
+        if custom_focus.strip():
+
+            selected_weak_topics.append(
+                custom_focus.strip()
             )
-        )
 
-        selected_weak = st.multiselect(
-            "Priority topics",
-            options=options,
-            default=weak_topics,
-        )
-
-        custom_topic = st.text_input(
-            "Additional focus topic",
-            placeholder="Example: Virtualization",
-        )
-
-        if custom_topic.strip():
-
-            if custom_topic.strip() not in selected_weak:
-                selected_weak.append(
-                    custom_topic.strip()
-                )
-
-    st.markdown("")
-
-    if st.button(
-        "Generate My Study Plan",
+    generate_plan = st.button(
+        "📅 Generate My Study Plan",
         type="primary",
         use_container_width=True,
-    ):
+    )
+
+    if generate_plan:
 
         if not config.is_gemini_configured():
 
             st.error(
-                "Gemini AI is not configured."
+                "⚠️ Gemini AI is not configured."
             )
 
         else:
 
             with st.spinner(
-                "Building your personalized plan..."
+                "Creating your personalized study plan..."
             ):
 
                 try:
@@ -1437,69 +1319,89 @@ elif nav_choice == "📅 Study Plan":
                     plan = (
                         study_plan.generate_study_plan(
                             subject=subject,
-                            exam_date=str(exam_date),
+                            exam_date=str(
+                                exam_date
+                            ),
                             daily_hours=daily_hours,
-                            knowledge_level=knowledge_level,
-                            weak_topics=selected_weak,
+                            knowledge_level=(
+                                knowledge_level
+                            ),
+                            weak_topics=(
+                                selected_weak_topics
+                            ),
                         )
                     )
 
-                    st.session_state.generated_plan = plan
+                    st.session_state.generated_plan = (
+                        plan
+                    )
 
                     st.success(
-                        "Your study plan is ready."
+                        "Study plan generated successfully!"
                     )
 
-                except Exception as ex:
+                except Exception as error:
 
                     st.error(
-                        f"Could not generate study plan: {ex}"
+                        f"❌ Error generating study plan: "
+                        f"{error}"
                     )
+
+    # --------------------------------------------------------
+    # GENERATED PLAN
+    # --------------------------------------------------------
 
     if st.session_state.generated_plan:
 
-        plan = st.session_state.generated_plan
+        plan = (
+            st.session_state.generated_plan
+        )
 
-        st.markdown("---")
+        st.divider()
 
-        st.markdown(
-            f"## {plan['subject']}"
+        st.subheader(
+            f"📋 {plan['subject']}"
         )
 
         d1, d2, d3 = st.columns(3)
 
         with d1:
+
             st.metric(
-                "Days remaining",
+                "Days Remaining",
                 plan["days_remaining"],
             )
 
         with d2:
+
             st.metric(
-                "Daily commitment",
-                f"{plan['daily_hours']} hrs",
+                "Daily Commitment",
+                f"{plan['daily_hours']} hours",
             )
 
         with d3:
+
             st.metric(
-                "Level",
+                "Knowledge Level",
                 plan["knowledge_level"],
             )
 
-        st.markdown("---")
+        st.divider()
 
         st.markdown(
             plan["plan_markdown"]
         )
 
-        st.markdown("")
-
         st.download_button(
-            "Download Study Plan",
+            "📥 Download Study Plan",
             data=plan["plan_markdown"],
             file_name=(
-                f"Study_Plan_"
-                f"{plan['subject'].replace(' ', '_')}.md"
+                "Study_Plan_"
+                + plan["subject"].replace(
+                    " ",
+                    "_",
+                )
+                + ".md"
             ),
             mime="text/markdown",
             use_container_width=True,
@@ -1510,11 +1412,12 @@ elif nav_choice == "📅 Study Plan":
 # FOOTER
 # ============================================================
 
-st.markdown(
-    """
-    <div class="app-footer">
-        StudyNova · AI Study Assistant
-    </div>
-    """,
-    unsafe_allow_html=True,
+st.divider()
+
+st.caption(
+    "📘 STUDY MATE • AI STUDY ASSISTANT"
+)
+
+st.caption(
+    "Learn smarter • Practice better • Prepare with confidence"
 )
